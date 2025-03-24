@@ -1,19 +1,29 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+# Build stage
+FROM node:18-alpine AS build
 WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of the files and build
+COPY . .
+RUN npm run build
+
+# Runtime stage
+FROM node:18-alpine AS final
+WORKDIR /app
+
+# Copy package files and install production dependencies
+COPY package*.json ./
+RUN npm install --production
+
+# Copy built files from build stage
+COPY --from=build /app/dist ./dist
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=80
+
 EXPOSE 80
-EXPOSE 443
-
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
-WORKDIR /src
-COPY ["./QuizMaster.csproj", "QuizMaster.csproj"]
-RUN dotnet restore "./QuizMaster.csproj"
-COPY . ./
-RUN dotnet build "QuizMaster.csproj" -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish "QuizMaster.csproj" -c Release -o /app/publish
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "QuizMaster.dll"]
+CMD ["npm", "start"]
