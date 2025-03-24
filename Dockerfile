@@ -20,7 +20,7 @@ RUN npm install --include=dev
 
 # Copy built files and source files
 COPY --from=build /app/dist ./dist
-COPY vite.config.js ./
+COPY vite.config.ts ./
 
 # Set environment variables
 ENV NODE_ENV=production
