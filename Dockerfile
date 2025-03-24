@@ -5,9 +5,9 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["QuizMaster.csproj", "./"]
-RUN dotnet restore "QuizMaster.csproj"
-COPY . .
+COPY ["./QuizMaster.csproj", "QuizMaster.csproj"]
+RUN dotnet restore "./QuizMaster.csproj"
+COPY . ./
 RUN dotnet build "QuizMaster.csproj" -c Release -o /app/build
 
 FROM build AS publish
