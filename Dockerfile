@@ -1,30 +1,31 @@
-# Build stage
-FROM node:18-alpine AS build
+# Stage 1: Build the application
+FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Copy package files
+# Copy dependency manifests and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest of the files and build
+# Copy the remaining source code and build the project
 COPY . .
 RUN npm run build
 
-# Runtime stage
-FROM node:18-alpine AS final
+# Stage 2: Run the application
+FROM node:18-alpine AS runner
 WORKDIR /app
 
-# Copy all package files and install ALL dependencies (including Vite)
-COPY package*.json ./
-RUN npm install --include=dev
-
-# Copy built files and source files
-COPY --from=build /app/dist ./dist
-COPY vite.config.ts ./
-
-# Set environment variables
+# Set production environment
 ENV NODE_ENV=production
-ENV PORT=80
 
-EXPOSE 80
-CMD ["npm", "run", "preview"]
+# Copy only the production dependency manifests
+COPY package*.json ./
+RUN npm install --only=production
+
+# Copy the built output from the builder stage
+COPY --from=builder /app/dist ./dist
+
+# Expose the port that your app listens on (adjust if needed)
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "run", "start"]
