@@ -14,16 +14,17 @@ RUN npm run build
 FROM node:18-alpine AS final
 WORKDIR /app
 
-# Copy package files and install production dependencies
+# Copy all package files and install ALL dependencies (including Vite)
 COPY package*.json ./
-RUN npm install --production
+RUN npm install --include=dev
 
-# Copy built files from build stage
+# Copy built files and source files
 COPY --from=build /app/dist ./dist
+COPY vite.config.js ./
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=80
 
 EXPOSE 80
-CMD ["npm", "start"]
+CMD ["npm", "run", "preview"]
