@@ -1,38 +1,32 @@
-# Stage 1: Build stage
-FROM node:20-alpine AS builder
-
+# Stage 1: Build the application
+FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Copy package files first to leverage Docker cache
-COPY package.json package-lock.json ./
+# Copy dependency manifests and install dependencies
+COPY package*.json ./
+RUN npm install
 
-# Install all dependencies including devDependencies
-RUN npm install --include=dev
-
-# Copy remaining source code
+# Copy the remaining source code and build the project
 COPY . .
-
-# Build the project
+# Ensure your package.json "build" script has been updated to remove --packages=external
 RUN npm run build
 
-# Stage 2: Production stage
-FROM node:20-alpine
-
+# Stage 2: Run the application
+FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV=production
-ENV PORT=10000
-EXPOSE $PORT
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy only the production dependency manifests
+COPY package*.json ./
+RUN npm install --only=production
 
-# Install production dependencies only
-RUN npm install --omit=dev
-
-# Copy built assets from builder
+# Copy the built output from the builder stage
 COPY --from=builder /app/dist ./dist
 
-# Start command
-CMD ["node", "dist/index.js"]
+# Expose the port your app listens on (adjust if needed)
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "run", "start"]
